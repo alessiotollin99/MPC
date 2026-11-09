@@ -91,8 +91,8 @@ print(f"Tmax is: {np.max(Tvec): .2f} °C, at {np.argmax(Tvec): .0f} hour")
 
 hours = np.arange(0, n_steps, dtype = np.float64) % 24 # number of hour per day
 prices = hours.copy()
-mask_6 = hours < 7
-mask_17_21 = (hours >= 17) & (hours < 22)
+mask_6 = hours < 6
+mask_17_21 = (hours >= 17) & (hours < 21)
 prices[mask_6] = 0.12
 prices[mask_17_21] = 0.40
 prices[~mask_6 & ~mask_17_21] = 0.20
