@@ -16,7 +16,7 @@ time_series = np.arange(0, dt*n_steps, dt) # temporal series
 Text = f_Text(time_series / 3600)
 P = {P_elmin: [], Pel_max: []}
 
-def myRC_onestep(Pel, t):
+def myRC_onestep(UA, Pel, t, Text):
         
     T = Tvec[t] + dt/C * (UA * (Text[t]-Tvec[t]) + COP * Pel)
     return T
@@ -25,7 +25,7 @@ for p in P.keys():
     Tvec = np.zeros(n_steps+1)
     Tvec[0] = Tin
     for t in range(n_steps):
-        Tvec[t+1] = myRC_onestep(p, t)
+        Tvec[t+1] = myRC_onestep(UA, p, t, Text)
     P[p].append(Text)
     P[p].append(Tvec)
 
