@@ -35,13 +35,17 @@ for p in P.keys():
 
 import matplotlib.pyplot as plt
 
-fig, axes = plt.subplots(1, 2, figsize = (10, 5))
+fig, axes = plt.subplots(1, 2, figsize = (11, 5), sharey=True)
 for p, ax in zip(P.keys(), axes):
-    ax.plot(time_series / 3600, P[p][0], color="cyan", label = "Tair")
-    ax.plot(time_series / 3600, P[p][1][:-1], color="red", label= "Tindoor")
+    ax.plot(np.arange(n_steps + 1), P[p][1], color="tab:red", marker=".", label="T indoor")
+    ax.plot(np.arange(n_steps), P[p][0], color="tab:green", label="T_a")
+    ax.axhline(20, color="gray", linestyle="--", label="comfort limits")
+    ax.axhline(23, color="gray", linestyle="--")
+    ax.set_title(f"Constant P_el = {p} W")
     ax.set_xlabel("Time [h]")
-    ax.set_ylabel("Temperature [°C]")
-    ax.legend()
+    ax.grid(alpha=0.3)
+    ax.legend(loc="upper right")
+axes[0].set_ylabel("Temperature [°C]")
 
 fig.tight_layout()
 plt.show()
@@ -71,19 +75,7 @@ for t in range(n_steps):
     else:
         Pel[t]=np.clip(Ptry, P_elmin, Pel_max)
 
-    Tvec[t+1] = myRC_onestep(Pel[t], t)
-
-fig, ax1 = plt.subplots(figsize = (10, 5))
-ax1.plot(time_series/3600, Tvec[:-1], color="red", label = "Tindoor")
-ax1.set_ylabel("Temperature [°C]")
-ax1.set_xlabel("Time [h]")
-ax2 = ax1.twinx()
-ax2.plot(time_series/3600, Pel, color = "blue", linestyle="-.", label = "Power")
-ax2.set_ylabel("Power [W]")
-plt.tight_layout()
-plt.show()
-
-print(f"Tmax is: {np.max(Tvec): .2f} °C, at {np.argmax(Tvec): .0f} hour")
+    Tvec[t+1] = myRC_onestep(UA, Pel[t], t, Text)
 
 #======================================================================
 # Electricity prices
@@ -97,9 +89,9 @@ prices[mask_6] = 0.12
 prices[mask_17_21] = 0.40
 prices[~mask_6 & ~mask_17_21] = 0.20
 
-total_cost = np.sum(prices * Pel*dt)
-non_comf_hours = (Tvec < 20) | (Tvec > 23)
+from plots import print_metrics, plot_results
 
-print(f"48 hours heating cost: {total_cost / 3600 / 1000: .2f} € \n N° of non-comfort hours: {np.sum(non_comf_hours): .0f}")
+print_metrics(Tvec, Pel, prices)
+plot_results(Tvec, Pel, prices, Text, setpoint=21, title="PI control + anti-windup")
 
 # Ore di discomfort: 0, Euro spesi: 12.12 -> esito del controllo PI + wind-up

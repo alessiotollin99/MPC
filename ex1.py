@@ -60,43 +60,7 @@ opti.subject_to(con_temperature)
 opti.solver("ipopt")
 sol = opti.solve()
 
-import matplotlib.pyplot as plt
+from plots import print_metrics, plot_results
 
-fig, axes = plt.subplots(2, 1, figsize=(10, 8))
-
-ax_left = axes[0]
-ax_right = ax_left.twinx()
-
-ax_left.plot(
-    time_series / dt, sol.value(T[:-1]), color="tab:red", label="Air temperature"
-)
-ax_right.plot(time_series / dt, sol.value(P), color="tab:blue", label="Power")
-
-ax_left.set_ylabel("Temperature [°C]")
-ax_right.set_ylabel("Power [W]")
-ax_left.set_xlabel("Time [h]")
-
-lines = ax_left.get_lines() + ax_right.get_lines()
-ax_left.legend(lines, [l.get_label() for l in lines], loc="upper left")
-
-axes[1].plot(
-    time_series / dt,
-    sol.value(P) * prices.reshape(-1) / 1000 * dt / 3600,
-    color="black",
-    linestyle="-.",
-)
-axes[1].set_xlabel("Time [h]")
-axes[1].set_ylabel("Hourly cost [€]")
-
-cost = sol.value(obj)
-
-axes[1].annotate(
-    f"Minimum cost: {cost:.2f} €",
-    xy=(0.02, 0.95),
-    xycoords="axes fraction",
-    va="top",
-    bbox=dict(boxstyle="round", fc="white", ec="black"),
-)
-
-plt.tight_layout()
-plt.show()
+print_metrics(sol.value(T), sol.value(P), prices)
+plot_results(sol.value(T), sol.value(P), prices, Text, title="Open-loop OCP")
