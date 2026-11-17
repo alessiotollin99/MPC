@@ -46,12 +46,23 @@ P = Qth / COP
 obj = cd.sum1(P * prices / 1000 * dt / 3600) + rho * cd.sum1(s_low) + rho * cd.sum1(s_upp)
 opti.minimize(obj)
 
-con_Thouse = Thouse[1:] == Thouse[:-1] + dt / C_home * UA_home * (
-    Text - Thouse[:-1]
-) + dt / C_home * UA_floor * (Tfloor[:-1] - Thouse[:-1])
-con_Tfloor = Tfloor[1:] == Tfloor[
-    :-1
-] + dt / C_floor * Qth - dt / C_floor * UA_floor * (Tfloor[:-1] - Thouse[:-1])
+#---------------integratore definition------- (for one step)
+x = cd.SX.sym("x", 2) # prima colonna Thouse, seconda colonna Tfloor
+p = cd.SX.sym("p", 2) # prima colonna Qth, seconda colonna Text
+dx0 = UA_floor / C_home * (x[1] - x[0]) + UA_home / C_home * (p[1]-x[0])
+dx1 = p[0] / C_floor - UA_floor / C_floor * (x[1]-x[0])
+ode = cd.vertcat(dx0, dx1)
+dae = {"x": x, "p": p, "ode": ode}
+F = cd.integrator("F", "cvodes", dae, 0, dt)
+
+for t in range(nsteps):
+    t_loc = cd.vertcat(Thouse[t], Tfloor[t])
+    p_loc = cd.vertcat(Qth[t], Text[t])
+    t_next = cd.vertcat(Thouse[t+1], Tfloor[t+1])
+    T_next = F(x0=t_loc, p=p_loc)["xf"]
+    opti.subject_to(t_next==T_next)
+
+# -------------optimization problem----------
 
 opti.subject_to(opti.bounded(0, P, 3000))
 opti.subject_to(s_low >= 0)
@@ -61,9 +72,6 @@ opti.subject_to(Thouse[1:] <= 23 + s_upp)
 opti.subject_to(Qth >= 0)
 opti.subject_to(Tfloor[0] == 22)
 opti.subject_to(Thouse[0] == 20)
-
-opti.subject_to(con_Tfloor)
-opti.subject_to(con_Thouse)
 
 opti.set_initial(Thouse, 20)
 opti.set_initial(Tfloor, 25)
